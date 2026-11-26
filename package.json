@@ -1,0 +1,82 @@
+{
+	"name": "@d-zero/release-automation",
+	"version": "0.0.0",
+	"description": "Release lines, Release PRs, nightly gates and publishing for D-ZERO repositories",
+	"author": "D-ZERO",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/d-zero-dev/release-automation.git"
+	},
+	"publishConfig": {
+		"access": "public"
+	},
+	"engines": {
+		"node": ">=24.11.0"
+	},
+	"type": "module",
+	"bin": "dist/cli.js",
+	"exports": {
+		"./classify": {
+			"import": "./dist/classify.js",
+			"types": "./dist/classify.d.ts"
+		},
+		"./dist-tag": {
+			"import": "./dist/dist-tag.js",
+			"types": "./dist/dist-tag.d.ts"
+		},
+		"./next-version": {
+			"import": "./dist/next-version.js",
+			"types": "./dist/next-version.d.ts"
+		},
+		"./release-pr-decision": {
+			"import": "./dist/release-pr-decision.js",
+			"types": "./dist/release-pr-decision.d.ts"
+		},
+		"./types": {
+			"import": "./dist/types.js",
+			"types": "./dist/types.d.ts"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "tsc",
+		"clean": "tsc --build --clean",
+		"test": "vitest run",
+		"lint": "run-s lint:oxlint lint:textlint:fix lint:oxfmt lint:textlint:check",
+		"lint:check": "run-s lint:oxlint:check lint:oxfmt:check lint:textlint:check",
+		"lint:oxlint": "oxlint --type-aware --fix .",
+		"lint:oxlint:check": "oxlint --type-aware --deny-warnings .",
+		"lint:oxfmt": "oxfmt --write \"{*,**/*}.{md,json,js,cjs,mjs,ts,mts,yml,yaml}\"",
+		"lint:oxfmt:check": "oxfmt --check \"{*,**/*}.{md,json,js,cjs,mjs,ts,mts,yml,yaml}\"",
+		"lint:textlint:fix": "textlint --fix \"{*,**/*}.md\"",
+		"lint:textlint:check": "textlint \"{*,**/*}.md\"",
+		"postinstall": "husky"
+	},
+	"dependencies": {
+		"yaml": "2.9.1"
+	},
+	"devDependencies": {
+		"@d-zero/commitlint-config": "6.0.0-alpha.3",
+		"@d-zero/lint-staged-config": "6.0.0-alpha.3",
+		"@d-zero/oxlint-config": "6.0.0-alpha.3",
+		"@d-zero/textlint-config": "6.0.0-alpha.3",
+		"@d-zero/tsconfig": "2.0.0",
+		"@types/node": "26.0.1",
+		"husky": "9.1.7",
+		"npm-run-all2": "9.0.3",
+		"oxfmt": "0.62.0",
+		"oxlint": "1.77.0",
+		"oxlint-tsgolint": "7.0.2005",
+		"textlint": "15.8.0",
+		"typescript": "6.0.3",
+		"vitest": "4.1.12"
+	},
+	"packageManager": "yarn@4.18.1",
+	"volta": {
+		"node": "26.7.0",
+		"yarn": "4.18.1"
+	}
+}

@@ -1,0 +1,10 @@
+.DS_Store
+dist
+node_modules/
+.yarn
+*.tsbuildinfo
+*.log
+*.tgz
+coverage
+.env
+.claude/settings.local.json
