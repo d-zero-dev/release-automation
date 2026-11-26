@@ -6,6 +6,7 @@ import type { PublishMode } from '../types.js';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 
+import { prependRelease } from '../changelog.js';
 import { parseCommit } from '../conventional-commit.js';
 import { runShell } from '../io/exec.js';
 import { versionAt } from '../io/repo.js';
@@ -105,15 +106,17 @@ export function generateRelease(input: {
 					parsed.breaking || ['feat', 'fix', 'perf', 'revert'].includes(parsed.type ?? '')
 				);
 			})
-			.map(({ sha, message }) => `- ${message.split('\n')[0]} (${sha.slice(0, 7)})`);
-		const entry = `## ${next.version} (${formatDate(input.now)})\n\n${counted.join('\n')}\n`;
-		const previous = existsSync(changelogPath)
-			? readFileSync(changelogPath, 'utf8')
-			: '# Changelog\n';
-		const [title = '# Changelog', ...rest] = previous.split('\n');
+			.map(({ sha, message }) => `${message.split('\n')[0]} (${sha.slice(0, 7)})`);
 		writeFileSync(
 			changelogPath,
-			`${title}\n\n${entry}${rest.join('\n').replace(/^\n*/, '\n')}`,
+			prependRelease(
+				existsSync(changelogPath) ? readFileSync(changelogPath, 'utf8') : null,
+				{
+					version: next.version,
+					date: formatDate(input.now),
+					entries: counted,
+				},
+			),
 		);
 	}
 
