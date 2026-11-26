@@ -1,0 +1,43 @@
+name: Full CI
+
+# The Full CI (rule 32): on Release PRs (the release label) and on the Nightly
+# (workflow_dispatch). Other pull requests skip the job, and full-ci-ok passes.
+# Required check: full-ci-ok.
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, labeled]
+
+permissions:
+  contents: read
+
+jobs:
+  full:
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'release')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: package.json
+      - run: npm install --global corepack@0.36.0
+      - run: corepack enable
+      - run: yarn install --immutable
+      - run: yarn build
+      - run: yarn lint:check
+      - run: yarn test
+      # The CLI runs on this repository itself: the lines and the files that name them.
+      - run: yarn release-automation classify
+      - run: yarn release-automation lines-check
+      # The published tarball keeps its bin and holds the build.
+      - run: npm pack --dry-run
+
+  full-ci-ok:
+    if: always()
+    needs: [full]
+    runs-on: ubuntu-latest
+    steps:
+      - run: test "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" = false

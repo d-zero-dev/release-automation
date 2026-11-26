@@ -1,0 +1,49 @@
+name: Publish
+
+# Rule 65: the merge of a Release PR into main publishes it. The command checks
+# the Release PR, tags the merge commit as the Publish App, publishes with OIDC
+# Trusted Publishing, verifies the registry, and brings main back to dev. A push
+# that is not the merge of a Release PR publishes nothing. Tag pushes start
+# nothing.
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+  checks: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: release
+    steps:
+      - uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
+        id: publish-app
+        with:
+          client-id: ${{ vars.PUBLISH_APP_CLIENT_ID }}
+          private-key: ${{ secrets.PUBLISH_APP_PRIVATE_KEY }}
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: package.json
+          registry-url: https://registry.npmjs.org
+      - run: npm install --global corepack@0.36.0
+      - run: corepack enable
+      - run: yarn install --immutable
+      - run: yarn build
+      - run: yarn release-automation publish
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_APP_SLUG: ${{ vars.RELEASE_APP_SLUG }}
+          PUBLISH_APP_TOKEN: ${{ steps.publish-app.outputs.token }}
+          PUBLISH_APP_SLUG: ${{ vars.PUBLISH_APP_SLUG }}
