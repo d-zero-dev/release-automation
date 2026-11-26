@@ -311,7 +311,6 @@ async function syncToDev(git: LocalGit, gh: GitHub, sha: string): Promise<void> 
 		'GET',
 		`/users/${encodeURIComponent(`${slug}[bot]`)}`,
 	);
-	const remote = `https://x-access-token:${token}@github.com/${gh.repository}.git`;
 	const syncBranch = `sync/${sha.slice(0, 12)}`;
 	await retry(
 		async () => {
@@ -328,7 +327,7 @@ async function syncToDev(git: LocalGit, gh: GitHub, sha: string): Promise<void> 
 				sha,
 			);
 			const merged = git.sha('HEAD');
-			git.raw('push', '--force', remote, `HEAD:refs/heads/${syncBranch}`);
+			git.pushAs(token, gh.repository, `HEAD:refs/heads/${syncBranch}`);
 			await waitForCheck(gh, merged, CI_OK);
 			await gh.rest('PATCH', '/repos/{repo}/git/refs/heads/dev', {
 				sha: merged,

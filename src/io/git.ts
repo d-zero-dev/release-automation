@@ -25,6 +25,35 @@ export interface LocalGit extends Git {
 	messages(from: string, to: string): { sha: string; message: string }[];
 	/** Runs git with arguments and returns its output. */
 	raw(...args: string[]): string;
+	/** Force-pushes a refspec to a GitHub repository as the owner of a token (see {@link pushArgs}). */
+	pushAs(token: string, repository: string, refspec: string): void;
+}
+
+/**
+ * The arguments of a force push to a GitHub repository as the owner of a
+ * token. `actions/checkout` leaves the workflow's own token in
+ * `http.https://github.com/.extraheader`, and git sends that header in place
+ * of the credentials of the URL, so the push would run as
+ * `github-actions[bot]` with read access. An empty value of a multi-valued
+ * `http.extraHeader` resets the list, and a `-c` option comes last, so the
+ * token of the URL is the only credential.
+ * @param token - The token, such as a GitHub App installation token
+ * @param repository - `owner/name`
+ * @param refspec - What to push, such as `HEAD:refs/heads/release/dev`
+ * @returns The git arguments
+ * @example
+ * pushArgs('ghs_x', 'o/r', 'HEAD:refs/heads/b');
+ * // ['-c', 'http.https://github.com/.extraheader=', 'push', '--force', 'https://x-access-token:ghs_x@github.com/o/r.git', 'HEAD:refs/heads/b']
+ */
+export function pushArgs(token: string, repository: string, refspec: string): string[] {
+	return [
+		'-c',
+		'http.https://github.com/.extraheader=',
+		'push',
+		'--force',
+		`https://x-access-token:${token}@github.com/${repository}.git`,
+		refspec,
+	];
 }
 
 /**
@@ -88,5 +117,8 @@ export function createGit(cwd: string): LocalGit {
 					return { sha, message: message.trim() };
 				}),
 		raw: (...args) => git(...args),
+		pushAs: (token, repository, refspec) => {
+			git(...pushArgs(token, repository, refspec));
+		},
 	};
 }
