@@ -385,10 +385,9 @@ async function pushRelease(input: {
 		generated.message,
 	);
 	const token = requireEnv('RELEASE_APP_TOKEN');
-	git.raw(
-		'push',
-		'--force',
-		`https://x-access-token:${token}@github.com/${input.gh.repository}.git`,
+	git.pushAs(
+		token,
+		input.gh.repository,
 		`HEAD:refs/heads/${releaseBranch(input.line.branch)}`,
 	);
 	return { ok: true, version: generated.version };

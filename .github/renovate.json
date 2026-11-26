@@ -1,0 +1,98 @@
+{
+	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
+	"configMigration": true,
+	"extends": [
+		"config:recommended",
+		"docker:pinDigests",
+		"helpers:pinGitHubActionDigestsToSemver",
+		":pinDevDependencies",
+		":semanticCommitTypeAll(chore)"
+	],
+	"baseBranchPatterns": ["dev"],
+	"timezone": "Asia/Tokyo",
+	"rangeStrategy": "pin",
+	"minimumReleaseAge": "3 days",
+	"internalChecksFilter": "strict",
+	"prConcurrentLimit": 0,
+	"prHourlyLimit": 0,
+	"platformAutomerge": true,
+	"osvVulnerabilityAlerts": true,
+	"vulnerabilityAlerts": {
+		"enabled": true,
+		"minimumReleaseAge": null,
+		"labels": ["security"]
+	},
+	"labels": ["Dependencies", "Renovate"],
+	"lockFileMaintenance": {
+		"enabled": true,
+		"automerge": true,
+		"schedule": ["* 0-4 * * *"]
+	},
+	"customManagers": [
+		{
+			"customType": "regex",
+			"description": "Rule 44: the Corepack version every workflow installs; one PR updates them all",
+			"managerFilePatterns": ["/^\\.github/workflows/.+\\.ya?ml$/"],
+			"matchStrings": [
+				"npm install --global corepack@(?<currentValue>\\d+\\.\\d+\\.\\d+)"
+			],
+			"depNameTemplate": "corepack",
+			"datasourceTemplate": "npm"
+		}
+	],
+	"packageRules": [
+		{
+			"matchDepTypes": ["optionalDependencies"],
+			"addLabels": ["Dependencies: Optional"]
+		},
+		{ "matchDepTypes": ["devDependencies"], "addLabels": ["Dependencies: Development"] },
+		{ "matchDepTypes": ["dependencies"], "addLabels": ["Dependencies: Production"] },
+		{
+			"description": "Rule 1: every update automerges once the required CI passes, 0.x and majors included",
+			"matchUpdateTypes": ["major", "minor", "patch", "pin", "digest"],
+			"automerge": true
+		},
+		{
+			"description": "Rule 11: pinGitHubActionDigestsToSemver raises each release as a version update; the digest update of the same commit carries no release date and never passes minimumReleaseAge",
+			"matchManagers": ["github-actions"],
+			"matchUpdateTypes": ["digest"],
+			"enabled": false
+		},
+		{
+			"description": "Rule 4: lock file maintenance has no release dates to wait on (the package manager's age gate holds new versions back) and is never held back by other PRs",
+			"matchUpdateTypes": ["lockFileMaintenance"],
+			"minimumReleaseAge": null,
+			"prConcurrentLimit": 0,
+			"prHourlyLimit": 0
+		},
+		{
+			"description": "Rule 7: the published package raises the lower bound of its dependency ranges, and an update of them reaches users as a fix",
+			"matchFileNames": ["package.json"],
+			"matchDepTypes": ["dependencies"],
+			"rangeStrategy": "bump",
+			"semanticCommitType": "fix",
+			"semanticCommitScope": "deps"
+		},
+		{
+			"description": "Rule 8: a peer range keeps its lower bound",
+			"matchDepTypes": ["peerDependencies"],
+			"rangeStrategy": "widen"
+		},
+		{
+			"description": "engines states the Node.js versions the published package supports; it is raised by hand, not by Renovate (the same as a peer range, rule 8)",
+			"matchDepTypes": ["engines"],
+			"enabled": false
+		},
+		{
+			"description": "Rules 10 and 45: vite is installed only as the required peer of vitest (vitest 5 accepts ^6.4.0 || ^7.0.0 || ^8.0.0), so its minor and patch updates move in the same PR as vitest",
+			"matchPackageNames": ["vite"],
+			"groupName": "vitest monorepo"
+		},
+		{
+			"description": "Rules 10 and 45: a vite major is taken by hand once the vitest peer range admits it; separateMajorMinor gives a group's major its own branch, where vite could arrive alone and outside that range",
+			"matchPackageNames": ["vite"],
+			"matchUpdateTypes": ["major"],
+			"enabled": false
+		}
+	]
+}

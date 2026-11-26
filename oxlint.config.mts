@@ -21,6 +21,13 @@ export default {
 	ignorePatterns: [...config.ignorePatterns, '**/dist/**'],
 	overrides: [
 		{
+			// Skill scripts are CLI tools: stdout is their interface.
+			files: ['.claude/skills/*/scripts/**'],
+			rules: {
+				'no-console': 'off',
+			},
+		},
+		{
 			// `.textlintrc.js` is CommonJS.
 			files: ['.textlintrc.js'],
 			rules: {
