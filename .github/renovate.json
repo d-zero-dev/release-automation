@@ -77,6 +77,11 @@
 			"description": "Rule 8: a peer range keeps its lower bound",
 			"matchDepTypes": ["peerDependencies"],
 			"rangeStrategy": "widen"
+		},
+		{
+			"description": "engines states the Node.js versions the published package supports; it is raised by hand, not by Renovate (the same as a peer range, rule 8)",
+			"matchDepTypes": ["engines"],
+			"enabled": false
 		}
 	]
 }
