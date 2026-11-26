@@ -112,15 +112,17 @@ GitHub や npm に書き込む実行（`--dry-run`なし）は、対象と内容
 
 ## スキル
 
-| スキル          | パス                                      | 用途                                                                       |
-| --------------- | ----------------------------------------- | -------------------------------------------------------------------------- |
-| Grill me        | `.claude/skills/grill-me/SKILL.md`        | 計画・設計の前提を掘り下げて合意形成する                                   |
-| Impl            | `.claude/skills/impl/SKILL.md`            | 合意済み計画の実装・検証・持ち越しの Issue 化・PR 作成・マージ後の台帳確認 |
-| Git             | `.claude/skills/git/SKILL.md`             | コミット規約・コミット前コンテンツチェック・破壊的変更の扱い               |
-| PR              | `.claude/skills/pr/SKILL.md`              | PR 作成フロー（base 追従・本文の節構成・push はユーザー実行・CI 監視）     |
-| Merged          | `.claude/skills/merged/SKILL.md`          | マージ後の手順                                                             |
-| Create issue    | `.claude/skills/create-issue/SKILL.md`    | 原因まで調べて Issue を起票する                                            |
-| Product Manager | `.claude/skills/product-manager/SKILL.md` | ドキュメント整合チェック、PR レビュー                                      |
-| QA Engineer     | `.claude/skills/qa-engineer/SKILL.md`     | テスト品質チェック                                                         |
+| スキル          | パス                                      | 用途                                                                              |
+| --------------- | ----------------------------------------- | --------------------------------------------------------------------------------- |
+| Grill me        | `.claude/skills/grill-me/SKILL.md`        | 計画・設計の前提を掘り下げて合意形成する                                          |
+| Impl            | `.claude/skills/impl/SKILL.md`            | 合意済み計画の実装・検証・持ち越しの Issue 化・PR 作成・マージ後の台帳確認        |
+| Git             | `.claude/skills/git/SKILL.md`             | コミット規約・コミット前コンテンツチェック・破壊的変更の扱い                      |
+| PR              | `.claude/skills/pr/SKILL.md`              | PR 作成フロー（base 追従・本文の節構成・push はユーザー実行・CI 監視）            |
+| Merged          | `.claude/skills/merged/SKILL.md`          | マージ後の手順                                                                    |
+| Create issue    | `.claude/skills/create-issue/SKILL.md`    | 原因まで調べて Issue を起票する                                                   |
+| npm publish     | `.claude/skills/npm-publish/SKILL.md`     | リリース（Release PR の確認とマージ、昇格の指示、公開の監視と検証、失敗時の復旧） |
+| Major rotation  | `.claude/skills/major-rotation/SKILL.md`  | 系列の移行（次メジャーの開始、正式版化、公開後の整理、旧系列の終了）              |
+| Product Manager | `.claude/skills/product-manager/SKILL.md` | ドキュメント整合チェック、PR レビュー                                             |
+| QA Engineer     | `.claude/skills/qa-engineer/SKILL.md`     | テスト品質チェック                                                                |
 
-コミットは必ず`.claude/skills/git/SKILL.md`、PR 作成は`.claude/skills/pr/SKILL.md`の手順に従うこと。
+コミットは必ず`.claude/skills/git/SKILL.md`、PR 作成は`.claude/skills/pr/SKILL.md`、リリースは`.claude/skills/npm-publish/SKILL.md`の手順に従うこと。
