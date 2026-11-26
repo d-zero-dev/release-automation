@@ -33,13 +33,18 @@
 			"customType": "regex",
 			"description": "Rule 44: the Corepack version every workflow installs; one PR updates them all",
 			"managerFilePatterns": ["/^\\.github/workflows/.+\\.ya?ml$/"],
-			"matchStrings": ["npm install --global corepack@(?<currentValue>\\d+\\.\\d+\\.\\d+)"],
+			"matchStrings": [
+				"npm install --global corepack@(?<currentValue>\\d+\\.\\d+\\.\\d+)"
+			],
 			"depNameTemplate": "corepack",
 			"datasourceTemplate": "npm"
 		}
 	],
 	"packageRules": [
-		{ "matchDepTypes": ["optionalDependencies"], "addLabels": ["Dependencies: Optional"] },
+		{
+			"matchDepTypes": ["optionalDependencies"],
+			"addLabels": ["Dependencies: Optional"]
+		},
 		{ "matchDepTypes": ["devDependencies"], "addLabels": ["Dependencies: Development"] },
 		{ "matchDepTypes": ["dependencies"], "addLabels": ["Dependencies: Production"] },
 		{
