@@ -82,6 +82,17 @@
 			"description": "engines states the Node.js versions the published package supports; it is raised by hand, not by Renovate (the same as a peer range, rule 8)",
 			"matchDepTypes": ["engines"],
 			"enabled": false
+		},
+		{
+			"description": "Rules 10 and 45: vite is installed only as the required peer of vitest (vitest 5 accepts ^6.4.0 || ^7.0.0 || ^8.0.0), so its minor and patch updates move in the same PR as vitest",
+			"matchPackageNames": ["vite"],
+			"groupName": "vitest monorepo"
+		},
+		{
+			"description": "Rules 10 and 45: a vite major is taken by hand once the vitest peer range admits it; separateMajorMinor gives a group's major its own branch, where vite could arrive alone and outside that range",
+			"matchPackageNames": ["vite"],
+			"matchUpdateTypes": ["major"],
+			"enabled": false
 		}
 	]
 }

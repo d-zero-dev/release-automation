@@ -73,6 +73,7 @@
 		"oxlint-tsgolint": "7.0.2008",
 		"textlint": "15.8.0",
 		"typescript": "7.0.2",
+		"vite": "8.3.8",
 		"vitest": "4.1.12"
 	},
 	"packageManager": "yarn@4.18.1",
