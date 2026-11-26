@@ -11,7 +11,8 @@ import { classifiedLines, localGit, summary } from './context.js';
 
 /**
  * Prints the classification of the repository: lines, modes, errors and the
- * actions the setup takes. Reads the remote refs; fetch them first.
+ * actions the setup takes. Reads the files of `HEAD` and the remote refs;
+ * fetch them first.
  * @param options - Output format
  * @param options.json - Print JSON
  * @returns The exit code: 1 when there are errors
@@ -19,7 +20,7 @@ import { classifiedLines, localGit, summary } from './context.js';
  * process.exitCode = classifyCommand({ json: false });
  */
 export function classifyCommand(options: { readonly json: boolean }): number {
-	const result = classify(readFacts(localGit(), new Date()));
+	const result = classify(readFacts(localGit(), new Date(), 'HEAD'));
 	if (options.json) {
 		// oxlint-disable-next-line no-console -- the CLI prints its result
 		console.log(JSON.stringify(result, null, 2));
@@ -46,13 +47,15 @@ export function classifyCommand(options: { readonly json: boolean }): number {
 
 /**
  * Compares the files that name branches with the lines (see `checkLines`).
+ * Reads the definition of `HEAD`, so a pull request is checked against the
+ * lines it proposes.
  * @returns The exit code: 1 when they differ
  * @example
  * process.exitCode = await linesCheckCommand();
  */
 export async function linesCheckCommand(): Promise<number> {
 	const git = localGit();
-	const { lines } = classifiedLines(git, new Date());
+	const { lines } = classifiedLines(git, new Date(), 'HEAD');
 	const cwd = git.cwd;
 	const read = (file: string) => {
 		const full = path.join(cwd, file);

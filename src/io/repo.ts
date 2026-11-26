@@ -169,16 +169,27 @@ export function publishModeAt(git: LocalGit, rev: string): PublishMode {
 }
 
 /**
- * Reads the facts `classify` decides on, from the remote refs and `dev`.
- * The caller fetches the branches and tags first.
+ * Reads the facts `classify` decides on: the files at a revision, and the
+ * branches and tags of the remote. The caller fetches the branches and tags
+ * first.
+ *
+ * The revision is `origin/dev` by default: `dev` holds the definition the
+ * automation acts on. The checks of a pull request read `HEAD` instead, so
+ * that the pull request that brings in or changes the definition is checked
+ * against what it proposes.
  * @param git - Git access
  * @param now - The current time
+ * @param rev - The revision the files are read from
  * @returns The facts
  * @example
  * classify(readFacts(git, new Date()));
+ * classify(readFacts(git, new Date(), 'HEAD'));
  */
-export function readFacts(git: LocalGit, now: Date): RepoFacts {
-	const rev = `origin/${CURRENT_BRANCH}`;
+export function readFacts(
+	git: LocalGit,
+	now: Date,
+	rev = `origin/${CURRENT_BRANCH}`,
+): RepoFacts {
 	const lerna = git.show(rev, 'lerna.json');
 	const root = JSON.parse(git.show(rev, 'package.json') ?? '{}') as {
 		private?: boolean;

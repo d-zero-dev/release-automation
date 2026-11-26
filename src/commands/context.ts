@@ -66,6 +66,7 @@ export function github(tokenVariable: string): GitHub {
  * Classifies the repository and refuses to go on while it has errors.
  * @param git - Git access
  * @param now - The current time
+ * @param rev - The revision the definition is read from; `origin/dev` by default
  * @returns The lines and the review mode
  * @throws {Error} When the classification has errors
  * @example
@@ -74,8 +75,9 @@ export function github(tokenVariable: string): GitHub {
 export function classifiedLines(
 	git: LocalGit,
 	now: Date,
+	rev?: string,
 ): { lines: readonly ClassifiedLine[]; collaborative: boolean } {
-	const result = classify(readFacts(git, now));
+	const result = classify(readFacts(git, now, rev));
 	if (result.errors.length > 0) {
 		throw new Error(
 			`The repository does not follow the rules yet:\n${result.errors.map((e) => `- ${e.message}`).join('\n')}`,
