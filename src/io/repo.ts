@@ -177,9 +177,14 @@ export function publishModeAt(git: LocalGit, rev: string): PublishMode {
  * automation acts on. The checks of a pull request read `HEAD` instead, so
  * that the pull request that brings in or changes the definition is checked
  * against what it proposes.
+ *
+ * The version of `dev` is always read from `origin/dev`, whatever the
+ * revision: the current major is the one `dev` carries. On a previous line
+ * the checked-out `lerna.json` states the previous major, and reading it
+ * there would make `dev` look like it carries that line.
  * @param git - Git access
  * @param now - The current time
- * @param rev - The revision the files are read from
+ * @param rev - The revision the definition files are read from
  * @returns The facts
  * @example
  * classify(readFacts(git, new Date()));
@@ -190,14 +195,15 @@ export function readFacts(
 	now: Date,
 	rev = `origin/${CURRENT_BRANCH}`,
 ): RepoFacts {
-	const lerna = git.show(rev, 'lerna.json');
+	const devRev = `origin/${CURRENT_BRANCH}`;
+	const lerna = git.show(devRev, 'lerna.json');
 	const root = JSON.parse(git.show(rev, 'package.json') ?? '{}') as {
 		private?: boolean;
 		packageManager?: string;
 	};
 	const codeowners = git.show(rev, '.github/CODEOWNERS');
 	return {
-		devVersion: versionAt(git, rev),
+		devVersion: versionAt(git, devRev),
 		lernaVersion:
 			lerna === null
 				? null
