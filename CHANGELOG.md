@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.0.4 (2026-11-27)
+
+- fix: read the version of dev from origin/dev on a previous line (9ef7048)
+
 ## 0.0.3 (2026-11-27)
 
 - fix: count a Nightly that never ran from when its workflow was added (10ea03a)
