@@ -24,7 +24,7 @@ import {
 	summary,
 } from './context.js';
 import { generateRelease } from './generate.js';
-import { nightlyRuns } from './runs.js';
+import { nightlyAddedAt, nightlyRuns } from './runs.js';
 
 /** The label of a pull request that fixes a vulnerability. */
 export const SECURITY_LABEL = 'security';
@@ -135,9 +135,10 @@ export async function releasePrCommand(options: {
 		pr.labels.some(({ name }) => name === RELEASE_LABEL),
 	);
 
+	const nightlyAdded = await nightlyAddedAt(gh);
 	for (const line of targets) {
 		const runs = await nightlyRuns(gh, line.branch);
-		if (isStale(runs, now)) {
+		if (isStale(runs, now, nightlyAdded)) {
 			await ensureIssue(
 				gh,
 				{

@@ -50,20 +50,22 @@ export function isBlocked(runs: readonly NightlyRun[]): boolean {
 export const NIGHTLY_STALE_MS = 2 * 24 * 60 * 60 * 1000;
 
 /**
- * Tells whether the Nightly of a line stopped running. GitHub disables the
- * schedule of a public repository after 60 days without activity, and a
- * stopped Nightly would leave the gate on stale results.
+ * Tells whether the Nightly of a line stopped running (rule 35). GitHub
+ * disables the schedule of a public repository after 60 days without
+ * activity, and a stopped Nightly would leave the gate on stale results.
+ * The time counts from the newest finished run; when the line has none, from
+ * when the Nightly workflow was added, so a Nightly set up a moment ago is not
+ * taken as stopped while one that never ran is.
  * @param runs - The finished runs of the line, newest first
  * @param now - The current time
- * @returns Whether the newest run is older than {@link NIGHTLY_STALE_MS}, or there is none
+ * @param since - When the Nightly workflow was added; without it, a line with no run counts as stopped
+ * @returns Whether more than {@link NIGHTLY_STALE_MS} passed since the newest run, or since `since` when there is no run
  * @example
- * isStale([], new Date()); // true
+ * isStale([], new Date('2026-11-27T12:00:00Z'), new Date('2026-11-27T00:00:00Z')); // false
  */
-export function isStale(runs: readonly NightlyRun[], now: Date): boolean {
-	const last = runs[0];
-	return (
-		last === undefined || now.getTime() - last.finishedAt.getTime() > NIGHTLY_STALE_MS
-	);
+export function isStale(runs: readonly NightlyRun[], now: Date, since?: Date): boolean {
+	const from = runs[0]?.finishedAt ?? since;
+	return from === undefined || now.getTime() - from.getTime() > NIGHTLY_STALE_MS;
 }
 
 /**

@@ -24,6 +24,9 @@ export const VERIFY_CHECK = 'release-pr-verified';
 /** The file name of the Full CI workflow the Nightly dispatches. */
 export const FULL_CI_WORKFLOW = 'full-ci.yml';
 
+/** The file name of the Nightly workflow, whose schedule starts the Full CI of each line. */
+export const NIGHTLY_WORKFLOW = 'nightly.yml';
+
 /**
  * Reads an environment variable that must be set.
  * @param name - The variable

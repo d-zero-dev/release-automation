@@ -48,4 +48,16 @@ describe('isStale', () => {
 		expect(isStale([run('a', 'success', 49)], NOW)).toBe(true);
 		expect(isStale([], NOW)).toBe(true);
 	});
+
+	test('a Nightly that never ran counts from when its workflow was added', () => {
+		const hoursAgo = (hours: number) => new Date(NOW.getTime() - hours * 3_600_000);
+		expect(isStale([], NOW, hoursAgo(47))).toBe(false);
+		expect(isStale([], NOW, hoursAgo(49))).toBe(true);
+	});
+
+	test('a finished run decides, whenever the workflow was added', () => {
+		const added = new Date(NOW.getTime() - 3_600_000);
+		expect(isStale([run('a', 'success', 49)], NOW, added)).toBe(true);
+		expect(isStale([run('a', 'success', 47)], NOW, added)).toBe(false);
+	});
 });
