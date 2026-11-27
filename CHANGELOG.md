@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.0.3 (2026-11-27)
+
+- fix: count a Nightly that never ran from when its workflow was added (10ea03a)
+
 ## 0.0.2 (2026-11-27)
 
 - fix: report only vulnerabilities in the audit and keep its Issue when the audit fails (daef0ee)
