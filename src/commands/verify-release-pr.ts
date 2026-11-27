@@ -118,7 +118,9 @@ export async function verifyReleasePrCommand(options: {
 			);
 		}
 	}
-	git.raw('checkout', '--force', '--detach', parent);
+	// On a local branch named like the line, not detached: `lerna version`
+	// refuses a detached HEAD, and its `allowBranch` names the line's branch.
+	git.raw('checkout', '--force', '-B', line.branch, parent);
 	runShell('yarn install --immutable', git.cwd);
 	const generated = generateRelease({
 		git,
