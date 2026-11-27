@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.0.2 (2026-11-27)
+
+- fix: report only vulnerabilities in the audit and keep its Issue when the audit fails (daef0ee)
+
 ## 0.0.1 (2026-11-26)
 
 - fix: redact credentials from failed command errors (d316b47)
