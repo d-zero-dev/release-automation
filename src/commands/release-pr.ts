@@ -354,7 +354,9 @@ async function pushRelease(input: {
 	readonly now: Date;
 }): Promise<{ ok: true; version: string | null } | { ok: false; reason: string }> {
 	const { git } = input;
-	git.raw('checkout', '--force', '--detach', `origin/${input.line.branch}`);
+	// On a local branch named like the line, not detached: `lerna version`
+	// refuses a detached HEAD, and its `allowBranch` names the line's branch.
+	git.raw('checkout', '--force', '-B', input.line.branch, `origin/${input.line.branch}`);
 	runShell('yarn install --immutable', git.cwd);
 	const generated = generateRelease({
 		git,
@@ -366,7 +368,13 @@ async function pushRelease(input: {
 		now: input.now,
 	});
 	if (!generated.ok) {
-		git.raw('checkout', '--force', '--detach', `origin/${input.line.branch}`);
+		git.raw(
+			'checkout',
+			'--force',
+			'-B',
+			input.line.branch,
+			`origin/${input.line.branch}`,
+		);
 		return generated;
 	}
 	const appSlug = requireEnv('RELEASE_APP_SLUG');
