@@ -1,5 +1,6 @@
 import { parse as parseYaml } from 'yaml';
 
+import { auditIssue, auditMarker, auditOutcome, parseAudit } from '../audit.js';
 import { fetchPackument } from '../io/npm.js';
 import { blockerMarker, isBlocked, nightlyAction } from '../nightly.js';
 import { eolIssues } from '../rotation.js';
@@ -13,6 +14,7 @@ import {
 	github,
 	localGit,
 	summary,
+	upsertIssue,
 } from './context.js';
 import { nightlyRuns } from './runs.js';
 
@@ -128,54 +130,53 @@ export async function nightlyReportCommand(): Promise<void> {
 }
 
 /**
- * Turns the output of `yarn npm audit --json` on a line into an Issue, or
- * closes the line's audit Issue when the audit is clean.
- * @param options - The line and the audit output
+ * Turns the output of `yarn npm audit --json` on a line into the line's audit
+ * Issue, by the outcome of {@link auditOutcome}: opens the Issue or rewrites it
+ * with the latest findings and a comment, closes it when the audit is clean,
+ * and keeps it when the audit failed or its exit code is unknown.
+ * @param options - The line and the audit
  * @param options.line - The branch the audit ran on
  * @param options.output - The audit output (one JSON object per line)
+ * @param options.exitCode - The exit code of `yarn npm audit`, or null when unknown
+ * @returns The exit code of the command: 1 when the audit failed
  * @example
- * await auditReportCommand({ line: 'v3', output: readFileSync('audit.json', 'utf8') });
+ * await auditReportCommand({ line: 'v3', output: readFileSync('audit.json', 'utf8'), exitCode: 1 });
  */
 export async function auditReportCommand(options: {
 	readonly line: string;
 	readonly output: string;
-}): Promise<void> {
+	readonly exitCode: number | null;
+}): Promise<number> {
 	const gh = github('GITHUB_TOKEN');
-	const findings = options.output
-		.split('\n')
-		.filter((text) => text.trim().startsWith('{'))
-		.map(
-			(text) =>
-				JSON.parse(text) as {
-					value?: string;
-					children?: Record<string, string | undefined>;
-				},
-		)
-		.filter((finding) => finding.value !== undefined);
-	const marker = `<!-- release-automation:audit:${options.line} -->`;
-	if (findings.length === 0) {
-		await closeIssuesWith(gh, marker, `The audit of \`${options.line}\` is clean.`);
-		return;
+	const result = parseAudit(options.output);
+	const marker = auditMarker(options.line);
+	switch (auditOutcome(result, options.exitCode)) {
+		case 'report': {
+			await upsertIssue(
+				gh,
+				auditIssue(options.line, result.findings),
+				`This Issue was rewritten with the latest audit of \`${options.line}\`.`,
+			);
+			await summary(`${options.line}: ${result.findings.length} findings`);
+			return 0;
+		}
+		case 'clean': {
+			await closeIssuesWith(gh, marker, `The audit of \`${options.line}\` is clean.`);
+			await summary(`${options.line}: the audit is clean`);
+			return 0;
+		}
+		case 'failed': {
+			await summary(
+				`${options.line}: yarn npm audit failed with exit code ${options.exitCode}; the audit Issue is left as it is`,
+			);
+			return 1;
+		}
+		case 'unknown': {
+			// The workflow command makes the warning visible on the run, not only in its log.
+			await summary(
+				`::warning::${options.line}: no findings, but without --exit-code a clean audit cannot be told from a failed one; the audit Issue is left as it is`,
+			);
+			return 0;
+		}
 	}
-	await ensureIssue(
-		gh,
-		{
-			marker,
-			title: `Vulnerable dependencies on ${options.line}`,
-			body: [
-				marker,
-				'',
-				`The dependency audit of \`${options.line}\` found:`,
-				'',
-				...findings.map(
-					(finding) =>
-						`- \`${finding.value}\`: ${finding.children?.['Issue'] ?? ''} (${finding.children?.['Severity'] ?? ''}) ${finding.children?.['URL'] ?? ''}`,
-				),
-				'',
-				'Fix them on the line (a vulnerability fix PR, `resolutions`, or the age gate exception of the repository policy), then this Issue closes after a clean audit.',
-				'',
-			].join('\n'),
-		},
-		[],
-	);
 }

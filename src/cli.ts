@@ -39,7 +39,11 @@ const COMMANDS = {
 	publish: { 'dry-run': { type: 'boolean' } },
 	'nightly-dispatch': { force: { type: 'boolean' } },
 	'nightly-report': {},
-	'audit-report': { line: { type: 'string' }, file: { type: 'string' } },
+	'audit-report': {
+		line: { type: 'string' },
+		file: { type: 'string' },
+		'exit-code': { type: 'string' },
+	},
 	'approve-renovate': { pr: { type: 'string' } },
 } as const;
 
@@ -68,6 +72,23 @@ function prNumber(values: Record<string, unknown>): number {
 		throw new Error('--pr takes a pull request number');
 	}
 	return value;
+}
+
+/**
+ * @param values - The parsed flags
+ * @returns The value of `--exit-code` as a number, or null when it is not given
+ */
+function exitCode(values: Record<string, unknown>): number | null {
+	const value = values['exit-code'];
+	if (value === undefined) {
+		return null;
+	}
+	if (typeof value !== 'string' || !/^\d+$/.test(value)) {
+		throw new Error(
+			`--exit-code takes the exit code of yarn npm audit, but got ${JSON.stringify(value)}`,
+		);
+	}
+	return Number(value);
 }
 
 try {
@@ -128,9 +149,10 @@ try {
 			break;
 		}
 		case 'audit-report': {
-			await auditReportCommand({
+			process.exitCode = await auditReportCommand({
 				line: required(flags, 'line'),
 				output: readFileSync(required(flags, 'file'), 'utf8'),
+				exitCode: exitCode(flags),
 			});
 			break;
 		}
