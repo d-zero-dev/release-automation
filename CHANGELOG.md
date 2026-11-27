@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.0.5 (2026-11-27)
+
+- fix: generate a release on a local branch, not a detached HEAD (020d3f5)
+
 ## 0.0.4 (2026-11-27)
 
 - fix: read the version of dev from origin/dev on a previous line (9ef7048)
