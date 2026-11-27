@@ -1,6 +1,6 @@
 {
 	"name": "@d-zero/release-automation",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"description": "Release lines, Release PRs, nightly gates and publishing for D-ZERO repositories",
 	"author": "D-ZERO",
 	"license": "MIT",
