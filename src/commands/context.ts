@@ -1,8 +1,10 @@
 import type { ClassifiedLine } from '../classify.js';
+import type { IssueDraft } from '../issue-body.js';
 import type { GitHub } from '../io/github.js';
 import type { LocalGit } from '../io/git.js';
 
 import { classify } from '../classify.js';
+import { issuesToRewrite } from '../issue-body.js';
 import { createGit } from '../io/git.js';
 import { createGitHub } from '../io/github.js';
 import { readFacts } from '../io/repo.js';
@@ -128,7 +130,7 @@ export async function openIssuesWith(gh: GitHub, marker: string): Promise<Issue[
  */
 export async function ensureIssue(
 	gh: GitHub,
-	issue: { readonly marker: string; readonly title: string; readonly body: string },
+	issue: IssueDraft,
 	labels: readonly string[],
 ): Promise<boolean> {
 	const open = await openIssuesWith(gh, issue.marker);
@@ -141,6 +143,37 @@ export async function ensureIssue(
 		labels,
 	});
 	return true;
+}
+
+/**
+ * Opens an Issue, or rewrites the body of the open Issues with the same
+ * marker when it differs and comments on them. For Issues that report the
+ * latest state, unlike {@link ensureIssue}, which keeps the first report.
+ * The comment is there because editing a body notifies no one. The title and
+ * the labels of an open Issue are left as they are.
+ * @param gh - The client
+ * @param issue - The Issue
+ * @param comment - The comment left on each rewritten Issue
+ * @example
+ * await upsertIssue(gh, auditIssue('dev', findings), 'The audit of `dev` changed.');
+ */
+export async function upsertIssue(
+	gh: GitHub,
+	issue: IssueDraft,
+	comment: string,
+): Promise<void> {
+	const open = await openIssuesWith(gh, issue.marker);
+	if (open.length === 0) {
+		await gh.rest('POST', '/repos/{repo}/issues', {
+			title: issue.title,
+			body: issue.body,
+		});
+		return;
+	}
+	for (const number of issuesToRewrite(open, issue.body)) {
+		await gh.rest('PATCH', `/repos/{repo}/issues/${number}`, { body: issue.body });
+		await gh.rest('POST', `/repos/{repo}/issues/${number}/comments`, { body: comment });
+	}
 }
 
 /**
