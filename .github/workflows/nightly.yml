@@ -70,7 +70,12 @@ jobs:
       - run: corepack enable
       - run: yarn install --immutable
       # One line (dev), so the audit runs on this checkout.
-      - run: yarn npm audit --all --recursive --json > "$RUNNER_TEMP/audit.json" || true
-      - run: yarn release-automation audit-report --line dev --file "$RUNNER_TEMP/audit.json"
+      # The exit code tells a clean audit (0) from a failed one; both print nothing.
+      - id: audit
+        run: |
+          status=0
+          yarn npm audit --all --recursive --json > "$RUNNER_TEMP/audit.json" || status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+      - run: yarn release-automation audit-report --line dev --file "$RUNNER_TEMP/audit.json" --exit-code "${{ steps.audit.outputs.status }}"
         env:
           GITHUB_TOKEN: ${{ github.token }}
