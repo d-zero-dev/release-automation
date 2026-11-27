@@ -5095,14 +5095,14 @@ __metadata:
   linkType: hard
 
 "table@npm:^6.9.0":
-  version: 6.10.1
-  resolution: "table@npm:6.10.1"
+  version: 6.10.2
+  resolution: "table@npm:6.10.2"
   dependencies:
     ajv: "npm:^8.0.1"
     slice-ansi: "npm:^4.0.0"
     string-width: "npm:^4.2.3"
     strip-ansi: "npm:^6.0.1"
-  checksum: 10c0/0aa3cd90766294e6f31676009e1fb2fa80249f803ac8f314ffd8c5c6db3fe888261fe7cefa21dc5c017eb2dbf3f9bc8cea1ee59e8cab855ea9af16ffed0f8d46
+  checksum: 10c0/f06a7cad4099357ab2a2c229a20815226927bb85c7cb4435c79ca38765abf6b4797bff1d252d1d56b85c988ebb259a40e44b4455c4fcc01bb40af0510483a318
   languageName: node
   linkType: hard
 
