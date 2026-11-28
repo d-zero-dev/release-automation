@@ -116,7 +116,15 @@ export async function publishCommand(options: {
 	// earlier run may have died before the tag was right.
 	const publishNeeded = needsPublish({ mode, unpublishedCount: unpublished.length });
 	const released = publishNeeded ? unpublished : packages;
-	const tag = await decideDistTag({ mode, line, lines, released, version });
+	const linesFile = readLinesFile(git, 'HEAD');
+	const tag = await decideDistTag({
+		mode,
+		line,
+		lines,
+		released,
+		version,
+		override: linesFile?.lines.find(({ branch }) => branch === line.branch)?.distTag,
+	});
 	const tags =
 		mode === 'lerna-independent'
 			? released.map((pkg) => `${pkg.name}@${pkg.version}`)
@@ -135,11 +143,7 @@ export async function publishCommand(options: {
 	}
 
 	if (publishNeeded) {
-		const command = publishCommandFor(
-			mode,
-			tag,
-			readLinesFile(git, 'HEAD')?.publishCommand,
-		);
+		const command = publishCommandFor(mode, tag, linesFile?.publishCommand);
 		await retry(
 			async (attempt) => {
 				await summary(`publish attempt ${attempt}: ${command}`);
@@ -238,6 +242,8 @@ async function decideDistTag(input: {
 	/** The packages the release is about: those published now, or all of them on a run that finds them already published. */
 	readonly released: readonly PublicPackage[];
 	readonly version: string | null;
+	/** The dist-tag the line names in the lines file. */
+	readonly override: string | undefined;
 }): Promise<string> {
 	const successorStablePublished = input.line.successorStable !== null;
 	const versions =
@@ -254,6 +260,7 @@ async function decideDistTag(input: {
 				independent: input.mode === 'lerna-independent',
 				successorStablePublished,
 				latestOnRegistry: packument?.distTags['latest'] ?? null,
+				...(input.override === undefined ? {} : { override: input.override }),
 			}),
 		);
 	}

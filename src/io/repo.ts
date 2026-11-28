@@ -5,6 +5,7 @@ import type { LocalGit } from './git.js';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
+import { isDistTagName } from '../dist-tag-name.js';
 import { CURRENT_BRANCH } from '../types.js';
 
 /** Where the lines file lives in a repository. */
@@ -30,6 +31,11 @@ export function parseLinesFile(text: string): LinesFile {
 		) {
 			throw new TypeError(
 				`${LINES_FILE}: each line needs "branch" and a "role" of current, next or previous`,
+			);
+		}
+		if (line.distTag !== undefined && !isDistTagName(line.distTag)) {
+			throw new TypeError(
+				`${LINES_FILE}: ${line.branch}: "distTag" must be a dist-tag name that starts with a letter and is not next`,
 			);
 		}
 	}
