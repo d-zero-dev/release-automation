@@ -12,7 +12,7 @@ export type LineRole = 'current' | 'next' | 'previous';
 /**
  * One entry of `.github/release-lines.json`.
  * @example
- * const line: LineEntry = { branch: 'v3', role: 'previous' };
+ * const line: LineEntry = { branch: 'v3', role: 'previous', distTag: 'v3-legacy' };
  */
 export interface LineEntry {
 	/** The branch pull requests and Renovate target. */
@@ -24,6 +24,12 @@ export interface LineEntry {
 	 * of the first `vX.Y.Z` tag of a later major is used.
 	 */
 	readonly successorStable?: string;
+	/**
+	 * The one dist-tag the line is published under, in place of the one the
+	 * version and the role decide (rule 43). The checks that refuse a release
+	 * still apply, and `next` is not accepted.
+	 */
+	readonly distTag?: string;
 }
 
 /**
