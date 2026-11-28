@@ -2,6 +2,14 @@
 export const PUBLISH_ATTEMPTS = 3;
 
 /**
+ * How many times the check that the registry shows a published version is
+ * made in all. The registry can take minutes to show a version it accepted, so
+ * with the waits doubling from 10 seconds the check gives up after about ten
+ * minutes.
+ */
+export const REGISTRY_VERIFY_ATTEMPTS = 7;
+
+/**
  * Runs a task until it succeeds, at most `attempts` times, waiting longer
  * between each try (`baseDelayMs`, then twice that, and so on).
  * @param task - The task; it receives the attempt number, starting at 1
