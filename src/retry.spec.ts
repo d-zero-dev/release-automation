@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import { retry } from './retry.js';
+import { REGISTRY_VERIFY_ATTEMPTS, retry } from './retry.js';
 
 describe('retry', () => {
 	test('waits longer each time and stops at the first success', async () => {
@@ -35,5 +35,20 @@ describe('retry', () => {
 			),
 		).rejects.toThrow('fail 3');
 		expect(tries).toBe(3);
+	});
+
+	test('the registry check waits at least ten minutes in all before it gives up', async () => {
+		const waits: number[] = [];
+		await expect(
+			retry(() => Promise.reject(new Error('not yet')), {
+				attempts: REGISTRY_VERIFY_ATTEMPTS,
+				baseDelayMs: 10_000,
+				sleep: (ms) => {
+					waits.push(ms);
+					return Promise.resolve();
+				},
+			}),
+		).rejects.toThrow('not yet');
+		expect(waits.reduce((sum, ms) => sum + ms, 0)).toBeGreaterThanOrEqual(600_000);
 	});
 });

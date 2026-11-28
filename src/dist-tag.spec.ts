@@ -73,4 +73,72 @@ describe('distTag', () => {
 			}),
 		).toBe('latest');
 	});
+
+	describe('a dist-tag the line names', () => {
+		test('a prerelease of the current line is published under it', () => {
+			expect(
+				distTag({
+					...base,
+					version: '4.0.0-alpha.79',
+					latestOnRegistry: '3.5.0',
+					override: 'latest',
+				}),
+			).toBe('latest');
+		});
+
+		test('a previous line is published under it, before and after a stable successor', () => {
+			for (const successorStablePublished of [false, true]) {
+				expect(
+					distTag({
+						...base,
+						version: '3.5.1',
+						role: 'previous',
+						successorStablePublished,
+						latestOnRegistry: '4.0.0-alpha.79',
+						override: 'v3-legacy',
+					}),
+				).toBe('v3-legacy');
+			}
+		});
+
+		test('latest still never moves to an older major', () => {
+			expect(() =>
+				distTag({
+					...base,
+					version: '3.5.1',
+					role: 'previous',
+					latestOnRegistry: '4.0.0',
+					override: 'latest',
+				}),
+			).toThrow('older major');
+		});
+
+		test('the stable release of the next-major line is still refused', () => {
+			expect(() =>
+				distTag({ ...base, version: '6.0.0', role: 'next', override: 'latest' }),
+			).toThrow('prereleases only');
+		});
+
+		test('next is refused as the name', () => {
+			expect(() =>
+				distTag({ ...base, version: '4.0.0-alpha.1', override: 'next' }),
+			).toThrow('never used');
+		});
+
+		test('an invalid version is still refused', () => {
+			expect(() => distTag({ ...base, version: '1.0', override: 'latest' })).toThrow();
+		});
+
+		test('independent mode keeps the dist-tag it names for any latest on the registry', () => {
+			expect(
+				distTag({
+					...base,
+					version: '0.5.0',
+					independent: true,
+					latestOnRegistry: '1.0.0',
+					override: 'latest',
+				}),
+			).toBe('latest');
+		});
+	});
 });

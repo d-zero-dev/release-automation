@@ -9,8 +9,9 @@ import { runShell } from '../io/exec.js';
 import { GitHubError } from '../io/github.js';
 import { fetchPackument } from '../io/npm.js';
 import { publicPackages, publishModeAt, readLinesFile, versionAt } from '../io/repo.js';
+import { needsPublish } from '../needs-publish.js';
 import { releasePrOrigin } from '../pr-checks.js';
-import { PUBLISH_ATTEMPTS, retry } from '../retry.js';
+import { PUBLISH_ATTEMPTS, REGISTRY_VERIFY_ATTEMPTS, retry } from '../retry.js';
 import { isFirstStableOfMajor, rotationIssue } from '../rotation.js';
 
 import {
@@ -31,8 +32,10 @@ const CI_OK = 'ci-ok';
 /**
  * Publishes the release a merged Release PR carries, when the pushed commit
  * is the merge of one; otherwise does nothing. In order: verify the Release
- * PR, tag the merge commit (as the Publish App), publish with retries, verify
- * every package and dist-tag on the registry, bring the release back to
+ * PR, tag the merge commit (as the Publish App), publish with retries (skipped
+ * when every package is already on the registry, so that a run started again
+ * after the registry took them goes on to the verification), verify every
+ * package and dist-tag on the registry, bring the release back to
  * `dev` (current line only), and open the rotation Issue after the first
  * stable release of a major. Any failure stops the rest.
  * @param options - Flags
@@ -107,12 +110,30 @@ export async function publishCommand(options: {
 	const stableTagsBefore = git.tags('HEAD').filter((tag) => /^v\d+\.\d+\.\d+$/.test(tag));
 	const unpublished = await unpublishedPackages(packages);
 	const version = versionAt(git, 'HEAD');
-	const tag = await decideDistTag({ mode, line, lines, unpublished, version });
+	// Nothing to publish: a run that starts again after the registry took the
+	// packages goes on with the verification instead of publishing over them.
+	// The dist-tag is still decided and checked, for every package, because the
+	// earlier run may have died before the tag was right.
+	const publishNeeded = needsPublish({ mode, unpublishedCount: unpublished.length });
+	const released = publishNeeded ? unpublished : packages;
+	const linesFile = readLinesFile(git, 'HEAD');
+	const tag = await decideDistTag({
+		mode,
+		line,
+		lines,
+		released,
+		version,
+		override: linesFile?.lines.find(({ branch }) => branch === line.branch)?.distTag,
+	});
 	const tags =
 		mode === 'lerna-independent'
-			? unpublished.map((pkg) => `${pkg.name}@${pkg.version}`)
+			? released.map((pkg) => `${pkg.name}@${pkg.version}`)
 			: [`v${version ?? ''}`];
-	await summary(`#${pr.number}: publishing ${tags.join(', ')} with dist-tag ${tag}`);
+	await summary(
+		publishNeeded
+			? `#${pr.number}: publishing ${tags.join(', ')} with dist-tag ${tag}`
+			: `#${pr.number}: ${tags.join(', ')} is already on the registry; publishing nothing, checking dist-tag ${tag}`,
+	);
 	if (options.dryRun) {
 		return;
 	}
@@ -121,18 +142,16 @@ export async function publishCommand(options: {
 		await ensureTag(publishGh, name, sha);
 	}
 
-	const command = publishCommandFor(
-		mode,
-		tag,
-		readLinesFile(git, 'HEAD')?.publishCommand,
-	);
-	await retry(
-		async (attempt) => {
-			await summary(`publish attempt ${attempt}: ${command}`);
-			runShell(command, git.cwd);
-		},
-		{ attempts: PUBLISH_ATTEMPTS, baseDelayMs: 30_000 },
-	);
+	if (publishNeeded) {
+		const command = publishCommandFor(mode, tag, linesFile?.publishCommand);
+		await retry(
+			async (attempt) => {
+				await summary(`publish attempt ${attempt}: ${command}`);
+				runShell(command, git.cwd);
+			},
+			{ attempts: PUBLISH_ATTEMPTS, baseDelayMs: 30_000 },
+		);
+	}
 
 	const verified: string[] = [];
 	if (mode !== 'custom') {
@@ -144,7 +163,7 @@ export async function publishCommand(options: {
 					if (!packument?.versions.includes(pkg.version)) {
 						throw new Error(`${pkg.name}@${pkg.version} is not on the registry`);
 					}
-					if (unpublished.includes(pkg) && packument.distTags[tag] !== pkg.version) {
+					if (released.includes(pkg) && packument.distTags[tag] !== pkg.version) {
 						throw new Error(
 							`${pkg.name}: ${tag} points at ${packument.distTags[tag] ?? 'nothing'}, not ${pkg.version}`,
 						);
@@ -152,11 +171,13 @@ export async function publishCommand(options: {
 					verified.push(`${pkg.name}@${pkg.version} (${tag})`);
 				}
 			},
-			{ attempts: 5, baseDelayMs: 10_000 },
+			{ attempts: REGISTRY_VERIFY_ATTEMPTS, baseDelayMs: 10_000 },
 		);
 	}
 	await summary(
-		`published and verified:\n${verified.map((entry) => `- ${entry}`).join('\n')}`,
+		mode === 'custom'
+			? 'published with the custom command; the registry was not checked'
+			: `${publishNeeded ? 'published' : 'already published'} and verified:\n${verified.map((entry) => `- ${entry}`).join('\n')}`,
 	);
 
 	if (line.role === 'current') {
@@ -218,14 +239,17 @@ async function decideDistTag(input: {
 	readonly mode: PublishMode;
 	readonly line: ClassifiedLine;
 	readonly lines: readonly ClassifiedLine[];
-	readonly unpublished: readonly PublicPackage[];
+	/** The packages the release is about: those published now, or all of them on a run that finds them already published. */
+	readonly released: readonly PublicPackage[];
 	readonly version: string | null;
+	/** The dist-tag the line names in the lines file. */
+	readonly override: string | undefined;
 }): Promise<string> {
 	const successorStablePublished = input.line.successorStable !== null;
 	const versions =
 		input.mode === 'lerna-independent'
-			? input.unpublished.map((pkg) => ({ version: pkg.version, name: pkg.name }))
-			: [{ version: input.version ?? '', name: input.unpublished[0]?.name ?? null }];
+			? input.released.map((pkg) => ({ version: pkg.version, name: pkg.name }))
+			: [{ version: input.version ?? '', name: input.released[0]?.name ?? null }];
 	const tags = new Set<string>();
 	for (const { version, name } of versions) {
 		const packument = name === null ? null : await fetchPackument(name);
@@ -236,6 +260,7 @@ async function decideDistTag(input: {
 				independent: input.mode === 'lerna-independent',
 				successorStablePublished,
 				latestOnRegistry: packument?.distTags['latest'] ?? null,
+				...(input.override === undefined ? {} : { override: input.override }),
 			}),
 		);
 	}
