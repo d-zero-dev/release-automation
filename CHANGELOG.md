@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.0 (2026-11-28)
+
+- fix: make publish safe to run again and wait longer for the registry (3cc2fb6)
+- feat: let a release line name the dist-tag it is published under (2212562)
+
 ## 0.0.5 (2026-11-27)
 
 - fix: generate a release on a local branch, not a detached HEAD (020d3f5)
